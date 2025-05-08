@@ -11,20 +11,29 @@ public class Client {
         Socket socket = null;
         BufferedReader bufferedReader = null;
         BufferedWriter bufferedWriter = null;
+        Scanner scanner = new Scanner(System.in);
 
         try {
             socket = new Socket("localhost", 1234);
             bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
+            System.out.print("Enter username: ");
+            String username = scanner.nextLine();
+
+            bufferedWriter.write(username);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+
+            System.out.println(bufferedReader.readLine());
+
             System.out.println("********** WELCOME TO CHAT CLI **********");
 
-            do {
+            while(true){
                 System.out.println("For checking availability of all clients press 1");
                 System.out.println("For establishing connection to an available client press 2");
 
                 System.out.print("Enter Option: ");
-                Scanner scanner = new Scanner(System.in);
                 String messageFromClient = scanner.nextLine();
 
                 bufferedWriter.write(messageFromClient);
@@ -34,22 +43,22 @@ public class Client {
 
                 switch (messageFromClient) {
                     case "1" -> {
-                            String line = bufferedReader.readLine();
-                        if (line.equalsIgnoreCase("end")) {
-                            break;
+                            String line;
+                            while((line = bufferedReader.readLine())!=null){
+                                if (line.trim().equalsIgnoreCase("end")) {
+                                    break;
+                            }
+                        System.out.println("Available Sockets: \n" + line);
                         }
-                        System.out.println("Available Sockets: " + line);
                     }
-                    case "2"->{
-                        System.out.print("Enter username: ");
-                        String username = scanner.nextLine();
-                        
+
+                    case "2" -> {
 
                     }
 
                 }
 
-            } while (true);
+            }
             /*
                         while(true){
 
