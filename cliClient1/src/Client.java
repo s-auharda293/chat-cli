@@ -32,6 +32,7 @@ public class Client {
             while(true){
                 System.out.println("For checking availability of all clients press 1");
                 System.out.println("For establishing connection to an available client press 2");
+                System.out.println("For closing current client connection press 3");
 
                 System.out.print("Enter Option: ");
                 String messageFromClient = scanner.nextLine();
@@ -43,17 +44,23 @@ public class Client {
 
                 switch (messageFromClient) {
                     case "1" -> {
+                        System.out.println("Available Clients: ");
                             String line;
                             while((line = bufferedReader.readLine())!=null){
                                 if (line.trim().equalsIgnoreCase("end")) {
                                     break;
                             }
-                        System.out.println("Available Sockets: \n" + line);
-                        }
+                                System.out.println(line);
+                            }
                     }
 
                     case "2" -> {
 
+                    }
+
+                    case "3" -> {
+                        System.out.println("Closing connection to server...");
+                        return;
                     }
 
                 }

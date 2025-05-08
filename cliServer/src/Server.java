@@ -5,8 +5,6 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.UUID;
 
-
-
 class SocketIdentification{
     private final Socket socket;
     private final String socketId;
@@ -34,91 +32,95 @@ class SocketIdentification{
 
 public class Server {
     public static void main(String[] args) {
-//        ExecutorService pool = Executors.newFixedThreadPool(10);
+        HashMap < String, SocketIdentification > activeClients = new HashMap <> ();
 
-        HashMap < String, Socket > activeClients = new HashMap <> ();
+        try(ServerSocket serverSocket = new ServerSocket(1234)) {
 
-        try {
-//            ClientSocketHandler task = new ClientSocketHandler();
-//            pool.submit(task);
-
-            ServerSocket serverSocket = new ServerSocket(1234);
-            System.out.println("Server is listening...👂");
+           System.out.println("Server is listening on port 1234...👂");
 
 
             while (true) {
-                try {
-                    Socket socket = serverSocket.accept();
-                    String socketId = UUID.randomUUID().toString();
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("New client connected!🥳");
 
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-
-                    SocketIdentification clientConnection = new SocketIdentification(socketId, socket, bufferedReader.readLine());
-
-                    bufferedWriter.write("Connection has been successfully established with server!🥳");
-                    bufferedWriter.newLine();
-                    bufferedWriter.flush();
-
-                    activeClients.put(clientConnection.getSocketId()+" Username: "+clientConnection.getUsername(),clientConnection.getSocket());
-
-
-                    while (true) {
-                        String messageFromClient = bufferedReader.readLine();
-
-                        switch (messageFromClient.toLowerCase()) {
-
-                            case "1" -> {
-                                if(activeClients.isEmpty()){
-                                    bufferedWriter.write("No active clients!🥺 ");
-                                    bufferedWriter.newLine();
-                                }else{
-                                    for (String clientSocketId: activeClients.keySet()) {
-                                        bufferedWriter.write(" SocketId: "+ String.valueOf(clientSocketId));
-                                        bufferedWriter.newLine();
-                                    }
-                                }
-                                bufferedWriter.write("END");
-                                bufferedWriter.newLine();
-                                bufferedWriter.flush();
-                            }
-
-                            case "2"->{
-                               String username = bufferedReader.readLine();
-//                                clientConnection = new SocketIdentification(socketId, socket, username);
-//
-//
-//                                activeClients.put(clientConnection.getSocketId(),clientConnection.getSocket());
-
-                                bufferedWriter.write("Connection has been successully registered with Server!");
-                                bufferedWriter.newLine();
-                                bufferedWriter.flush();
-
-                            }
-
-                            case "3" -> {
-                                    System.out.println("Closing port in Server🥲");
-                                socket.close();
-                                bufferedWriter.close();
-                                bufferedReader.close();
-
-                            }
-                        }
-                    }
-                } catch (IOException e) {
-                    System.out.println("IOException in server!💥");
-                }
+                ClientHandler clientHandler = new ClientHandler(clientSocket, activeClients);
+                Thread thread = new Thread(clientHandler);
+                thread.start();
             }
-        } catch (IOException e) {
-            System.out.println("IOException has occurred in server 💥" + e);
+
+    }catch (IOException e){
+            System.out.println("IOException occurred");
         }
     }
 }
 
-class ClientSocketHandler implements Runnable {
+
+
+
+class ClientHandler implements Runnable {
+    private Socket socket;
+    private HashMap<String, SocketIdentification > activeClients;
+    private String socketId;
+    private BufferedReader bufferedReader;
+    private BufferedWriter bufferedWriter;
+
+    public ClientHandler(Socket socket, HashMap<String, SocketIdentification> activeClients){
+        this.socket = socket;
+        this.activeClients = activeClients;
+    }
 
     @Override
     public void run() {
+        try {
+            String socketId = UUID.randomUUID().toString();
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
+            SocketIdentification clientConnection = new SocketIdentification(socketId, socket, bufferedReader.readLine());
+
+            activeClients.put(socketId, clientConnection);
+
+            bufferedWriter.write("Connection established with client🥳");
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+
+            while(true){
+                String input = bufferedReader.readLine();
+                if(input == null || input.equalsIgnoreCase("3")){
+                    break;
+                }
+
+                switch (input){
+                    case "1"->{
+                        for(SocketIdentification id: activeClients.values()){
+                            bufferedWriter.write("Socket: " + id.getSocketId() +" Username: " + id.getUsername());
+                            bufferedWriter.newLine();
+                        }
+                        bufferedWriter.write("END");
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                    }
+
+                    case "2" -> {
+                        bufferedWriter.write("Connection logic for peer chat not implemented yet.");
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                    }
+                }
+            }
+
+        }catch (IOException e){
+            System.out.println("IOException has occurred in Server");
+        } finally {
+            try {
+                if (socketId != null) activeClients.remove(socketId);
+                if (bufferedReader != null) bufferedReader.close();
+                if (bufferedWriter != null) bufferedWriter.close();
+                if (socket != null) socket.close();
+                System.out.println("Client " + socketId + " disconnected.");
+            } catch (IOException e) {
+                System.out.println("Error closing resources: " + e.getMessage());
+            }
+        }
     }
 }
