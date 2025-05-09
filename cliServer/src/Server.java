@@ -20,7 +20,7 @@ class SocketIdentification{
         return socketId;
     }
 
-    public Socket getSocket(){
+    public Socket getSocket() {
         return socket;
     }
 
@@ -49,7 +49,7 @@ public class Server {
             }
 
     }catch (IOException e){
-            System.out.println("IOException occurred");
+            System.out.println("IOException occurred in server");
         }
     }
 }
@@ -58,11 +58,9 @@ public class Server {
 
 
 class ClientHandler implements Runnable {
-    private Socket socket;
-    private HashMap<String, SocketIdentification > activeClients;
+    private final Socket socket;
+    private final HashMap<String, SocketIdentification > activeClients;
     private String socketId;
-    private BufferedReader bufferedReader;
-    private BufferedWriter bufferedWriter;
 
     public ClientHandler(Socket socket, HashMap<String, SocketIdentification> activeClients){
         this.socket = socket;
@@ -71,14 +69,11 @@ class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        try {
-            String socketId = UUID.randomUUID().toString();
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-
-            SocketIdentification clientConnection = new SocketIdentification(socketId, socket, bufferedReader.readLine());
-
-            activeClients.put(socketId, clientConnection);
+        try( BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));) {
+            this.socketId = UUID.randomUUID().toString();
+            SocketIdentification clientConnection = new SocketIdentification(this.socketId, this.socket, bufferedReader.readLine());
+            this.activeClients.put(this.socketId, clientConnection);
 
             bufferedWriter.write("Connection established with client🥳");
             bufferedWriter.newLine();
@@ -92,7 +87,7 @@ class ClientHandler implements Runnable {
 
                 switch (input){
                     case "1"->{
-                        for(SocketIdentification id: activeClients.values()){
+                        for(SocketIdentification id: this.activeClients.values()){
                             bufferedWriter.write("Socket: " + id.getSocketId() +" Username: " + id.getUsername());
                             bufferedWriter.newLine();
                         }
@@ -106,6 +101,16 @@ class ClientHandler implements Runnable {
                         bufferedWriter.newLine();
                         bufferedWriter.flush();
                     }
+
+                    case "3" -> {
+                        SocketIdentification id = this.activeClients.get(this.socketId);
+                        if(id!=null){
+                            bufferedWriter.write("Disconnecting " + id.getUsername() + "from server...");
+                            bufferedWriter.newLine();
+                            bufferedWriter.flush();
+                            this.activeClients.remove(this.socketId);
+                        }
+                    }
                 }
             }
 
@@ -113,11 +118,9 @@ class ClientHandler implements Runnable {
             System.out.println("IOException has occurred in Server");
         } finally {
             try {
-                if (socketId != null) activeClients.remove(socketId);
-                if (bufferedReader != null) bufferedReader.close();
-                if (bufferedWriter != null) bufferedWriter.close();
-                if (socket != null) socket.close();
-                System.out.println("Client " + socketId + " disconnected.");
+                if (this.socketId != null) this.activeClients.remove(socketId);
+                if (this.socket != null) this.socket.close();
+                System.out.println("Client " + this.socketId + " disconnected.");
             } catch (IOException e) {
                 System.out.println("Error closing resources: " + e.getMessage());
             }

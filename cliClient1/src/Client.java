@@ -66,24 +66,7 @@ public class Client {
                 }
 
             }
-            /*
-                        while(true){
 
-                            System.out.print("Enter message to send: ");
-                            String messageToSend = scanner.nextLine();
-
-                            bufferedWriter.write(messageToSend);
-                            bufferedWriter.newLine();
-                            bufferedWriter.flush();
-
-                            System.out.println(bufferedReader.readLine());
-
-                            if(messageToSend.equalsIgnoreCase("BYE")){
-                                break;
-                            }
-                        }
-
-             */
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("IO Exception has occurred in client 💥" + e);
