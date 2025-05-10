@@ -1,4 +1,4 @@
-package cliClient1.src;
+package cliClient2.src;
 
 import java.io.BufferedReader;
 import java.io.OutputStreamWriter;
@@ -20,26 +20,26 @@ public class Client {
 
             final BufferedReader finalBufferedReader = bufferedReader;
 
+            // Start a background thread that listens for messages from the server
+            new Thread(() -> {
+                try {
+                    String line;
+                    while (true) {
+                        if (finalBufferedReader.ready()) {
+                            line = finalBufferedReader.readLine();
+                            if (line != null) {
+                                if(line.equalsIgnoreCase("end")){
+                                    break;
+                                }
+                                System.out.println("Message from server: " + line);
 
-//            new Thread(() -> {
-//                try {
-//                    String line;
-//                    while (true) {
-//                        if (finalBufferedReader.ready()) {
-//                            line = finalBufferedReader.readLine();
-//                            if (line != null) {
-//                                if(line.equalsIgnoreCase("end")){
-//                                    break;
-//                                }
-//                                System.out.println("Message from server: " + line);
-//
-//                            }
-//                        }
-//                    }
-//                } catch (IOException e) {
-//                    System.out.println("Disconnected from server.");
-//                }
-//            }).start();
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    System.out.println("Disconnected from server.");
+                }
+            }).start();
 
             System.out.print("Enter username: ");
             String username = scanner.nextLine();

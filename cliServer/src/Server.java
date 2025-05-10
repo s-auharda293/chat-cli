@@ -36,7 +36,7 @@ public class Server {
 
         try(ServerSocket serverSocket = new ServerSocket(1234)) {
 
-           System.out.println("Server is listening on port 1234...👂");
+            System.out.println("Server is listening on port 1234...👂");
 
 
             while (true) {
@@ -48,47 +48,45 @@ public class Server {
                 thread.start();
             }
 
-    }catch (IOException e){
+        }catch (IOException e){
             System.out.println("IOException occurred in server");
         }
     }
 }
 
 
-
-
 class ClientHandler implements Runnable {
     private final Socket socket;
-    private final HashMap<String, SocketIdentification > activeClients;
+    private final HashMap<String, SocketIdentification> activeClients;
     private String socketId;
 
-    public ClientHandler(Socket socket, HashMap<String, SocketIdentification> activeClients){
+    public ClientHandler(Socket socket, HashMap<String, SocketIdentification> activeClients) {
         this.socket = socket;
         this.activeClients = activeClients;
     }
 
     @Override
     public void run() {
-        try( BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));) {
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(this.socket.getOutputStream()))) {
             this.socketId = UUID.randomUUID().toString();
             SocketIdentification clientConnection = new SocketIdentification(this.socketId, this.socket, bufferedReader.readLine());
             this.activeClients.put(this.socketId, clientConnection);
 
-            bufferedWriter.write("Connection established with client🥳");
+            bufferedWriter.write("Server: Connection established with client🥳");
             bufferedWriter.newLine();
             bufferedWriter.flush();
 
-            while(true){
+            while (true) {
                 String input = bufferedReader.readLine();
-                if(input == null || input.equalsIgnoreCase("3")){
+                if (input == null || input.equalsIgnoreCase("3")) {
                     break;
                 }
 
-                switch (input){
-                    case "1"->{
-                        for(SocketIdentification id: this.activeClients.values()){
-                            bufferedWriter.write("Socket: " + id.getSocketId() +" Username: " + id.getUsername());
+                switch (input) {
+                    case "1" -> {
+                        for (SocketIdentification id : this.activeClients.values()) {
+                            bufferedWriter.write("Socket: " + id.getSocketId() + " Username: " + id.getUsername());
                             bufferedWriter.newLine();
                         }
                         bufferedWriter.write("END");
@@ -97,15 +95,68 @@ class ClientHandler implements Runnable {
                     }
 
                     case "2" -> {
-                        bufferedWriter.write("Connection logic for peer chat not implemented yet.");
-                        bufferedWriter.newLine();
-                        bufferedWriter.flush();
+                        String command = bufferedReader.readLine();
+                        if (command.split(" ", 2).length == 2) {
+                            String recipientSocketId = command.split(" ", 2)[0];  // Extract socketId
+                            String recipientMessage = command.split(" ", 2)[1];   // Extract the full message
+
+                            System.out.println("Message received from client: "+recipientMessage+" from socket: "+recipientSocketId);
+
+                            boolean userFound = false;
+                            Socket recipientSocket = null;
+
+                            for (SocketIdentification recipientClient : this.activeClients.values()) {
+                                if (recipientClient.getSocketId().equalsIgnoreCase(recipientSocketId)) {
+                                    userFound = true;
+                                    recipientSocket = recipientClient.getSocket();
+                                    break;
+                                }
+                            }
+
+                            if (userFound) {
+                                try {
+                                    BufferedWriter recipientWriter = new BufferedWriter(
+                                            new OutputStreamWriter(recipientSocket.getOutputStream()));
+                                    recipientWriter.write("Message from " + clientConnection.getUsername() + ": " + recipientMessage);
+                                    recipientWriter.newLine();
+                                    recipientWriter.flush();
+
+                                    bufferedWriter.write("Message sent to " + recipientSocketId);
+                                    bufferedWriter.newLine();
+                                    bufferedWriter.write("END");
+                                    bufferedWriter.newLine();
+                                    bufferedWriter.flush();
+
+                                } catch (IOException e) {
+                                    System.out.println("Error sending message to the recipient.");
+                                }
+                            } else {
+                                try {
+                                    bufferedWriter.write("User with Socket ID " + recipientSocketId + " not found.");
+                                    bufferedWriter.newLine();
+                                    bufferedWriter.flush();
+                                } catch (IOException e) {
+                                    System.out.println("Error sending failure message to the sender.");
+                                }
+                            }
+                        } else {
+                            try {
+                                bufferedWriter.write("Invalid command. Please use: SEND_TO <socketId> <message>");
+                                bufferedWriter.newLine();
+                                bufferedWriter.write("end");
+                                bufferedWriter.newLine();
+                                bufferedWriter.flush();
+                            } catch (IOException e) {
+                                System.out.println("Error sending message from server.");
+                            }
+                        }
                     }
+
 
                     case "3" -> {
                         SocketIdentification id = this.activeClients.get(this.socketId);
-                        if(id!=null){
-                            bufferedWriter.write("Disconnecting " + id.getUsername() + "from server...");
+                        if (id != null) {
+                            bufferedWriter.write("Disconnecting " + id.getUsername() + "from server...🥺");
                             bufferedWriter.newLine();
                             bufferedWriter.flush();
                             this.activeClients.remove(this.socketId);
@@ -114,7 +165,7 @@ class ClientHandler implements Runnable {
                 }
             }
 
-        }catch (IOException e){
+        } catch (IOException e) {
             System.out.println("IOException has occurred in Server");
         } finally {
             try {
