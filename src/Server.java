@@ -22,7 +22,8 @@ public class Server{
                 thread.start();
             }
         }catch (IOException e){
-
+            System.out.println("IOException has occurred in server");
+            closeServerSocket();
         }
     }
 
